@@ -3,6 +3,7 @@
 // чтение зашифрованных кусков из d/<id>.bin и отдаются браузеру как обычные файлы.
 const BASE = new URL('./', self.location).pathname;
 const VIRTUAL = BASE + 'v/';
+const BLOB_EXT = '.zip'; // .bin GitHub Pages сжимает gzip'ом и ломает Range
 const TAG_BYTES = 16;
 const CHUNKS_PER_FETCH = 4;
 const DB_NAME = 'faib-atlas';
@@ -96,10 +97,12 @@ async function getState() {
   const { nonce, size } = gate.manifest;
   try {
     const last = Math.ceil(size / gate.chunk) - 1;
-    const parts = await fetchChunks(BASE + 'm.bin', fromHex(nonce), size, gate.chunk, 0, last, key);
+    const parts = await fetchChunks(BASE + 'm' + BLOB_EXT, fromHex(nonce), size, gate.chunk, 0, last, key);
     state = { key, gate, files: JSON.parse(new TextDecoder().decode(concat(parts))).files };
     return state;
   } catch (error) {
+    // Ключ стираем, только если он не подходит к данным (сменили пароль); сетевые сбои пробрасываем.
+    if (error.name !== 'OperationError') throw error;
     await storeRequest('readwrite', (store) => store.delete('key'));
     return null;
   }
@@ -152,7 +155,7 @@ async function serve(request, url) {
 function decryptStream(current, id, nonceHex, size, start, end) {
   const { chunk } = current.gate;
   const nonce = fromHex(nonceHex);
-  const url = BASE + 'd/' + id + '.bin';
+  const url = BASE + 'd/' + id + BLOB_EXT;
   const last = Math.floor(end / chunk);
   let next = Math.floor(start / chunk);
   return new ReadableStream({
