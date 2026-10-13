@@ -1,12 +1,12 @@
 'use strict';
-// Расшифровывает атлас на лету: запросы к /faib-atlas/v/... превращаются в
+// Расшифровывает сайт на лету: запросы к /<repo>/v/... превращаются в
 // чтение зашифрованных кусков из d/<id>.bin и отдаются браузеру как обычные файлы.
 const BASE = new URL('./', self.location).pathname;
 const VIRTUAL = BASE + 'v/';
 const BLOB_EXT = '.zip'; // .bin GitHub Pages сжимает gzip'ом и ломает Range
 const TAG_BYTES = 16;
 const CHUNKS_PER_FETCH = 4;
-const DB_NAME = 'faib-atlas';
+const DB_NAME = 'private-site:' + BASE; // у каждого сайта на домене своё хранилище ключа
 const STORE = 'keys';
 
 let state = null;
@@ -20,7 +20,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin || !url.pathname.startsWith(VIRTUAL)) return;
   event.respondWith(
-    serve(event.request, url).catch((error) => new Response('Атлас не смог открыть файл: ' + error.message, {
+    serve(event.request, url).catch((error) => new Response('Не получилось открыть файл: ' + error.message, {
       status: 500,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     })),

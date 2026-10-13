@@ -47,7 +47,7 @@ const fromHex = (text) => new Uint8Array(text.match(/../g).map((byte) => parseIn
 
 function openDb() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('faib-atlas', 1);
+    const request = indexedDB.open('private-site:' + BASE, 1);
     request.onupgradeneeded = () => request.result.createObjectStore('keys');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
